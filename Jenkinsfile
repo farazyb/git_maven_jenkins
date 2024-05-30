@@ -8,7 +8,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git 'https://github.com/farazyb/jenkins-maven-project.git'
+                git 'https://github.com/farazyb/git_maven_jenkins.git'
             }
         }
 
