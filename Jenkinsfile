@@ -4,7 +4,11 @@ pipeline {
     tools {
         maven 'maven'
     }
-
+    environment {
+        PROJECT_NAME = sh(script: 'mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout', returnStdout: true).trim()
+        PROJECT_VERSION = sh(script: 'mvn help:evaluate -Dexpression=project.version -q -DforceStdout', returnStdout: true).trim()
+        COMMIT_ID = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+    }
     stages {
         stage('Checkout') {
             steps {
@@ -21,13 +25,23 @@ pipeline {
         }
 
     }
-
-    post {
-        success {
-            echo 'Build and tests were successful!'
+    stage('Rename JAR') {
+            steps {
+                script {
+                    def jarFile = "${env.PROJECT_NAME}-${env.PROJECT_VERSION}.jar"
+                    def newJarFile = "${env.PROJECT_NAME}-${env.PROJECT_VERSION}-${env.COMMIT_ID}.jar"
+                    sh "mv target/${jarFile} target/${newJarFile}"
+                    env.JAR_FILE = newJarFile
+                }
+            }
         }
-        failure {
-            echo 'Build or tests failed!'
-        }
-    }
+       post {
+           success {
+               echo 'Build and tests were successful!'
+               echo "Deployed JAR: ${env.JAR_FILE}"
+           }
+           failure {
+               echo 'Build or tests failed!'
+           }
+       }
 }
