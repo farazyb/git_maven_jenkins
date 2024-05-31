@@ -7,7 +7,8 @@ pipeline {
     environment {
         PROJECT_NAME = sh(script: 'mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout', returnStdout: true).trim()
         PROJECT_VERSION = sh(script: 'mvn help:evaluate -Dexpression=project.version -q -DforceStdout', returnStdout: true).trim()
-        COMMIT_ID = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+        sh "git rev-parse --short HEAD > .git/commit-id"   
+        COMMIT_ID = readFile('.git/commit-id').trim()
     }
     stages {
         stage('Checkout') {
@@ -23,7 +24,7 @@ pipeline {
                 }
             }
         }
-stage('Rename JAR') {
+        stage('Rename JAR') {
             steps {
                 script {
                     def jarFile = "${env.PROJECT_NAME}-${env.PROJECT_VERSION}.jar"
