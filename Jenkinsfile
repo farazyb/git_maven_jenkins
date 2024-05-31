@@ -23,9 +23,7 @@ pipeline {
                 }
             }
         }
-
-    }
-    stage('Rename JAR') {
+stage('Rename JAR') {
             steps {
                 script {
                     def jarFile = "${env.PROJECT_NAME}-${env.PROJECT_VERSION}.jar"
@@ -35,10 +33,12 @@ pipeline {
                 }
             }
         }
+    }
+    
        post {
            success {
                echo 'Build and tests were successful!'
-               echo "Deployed JAR: ${env.JAR_FILE}"
+               
            }
            failure {
                echo 'Build or tests failed!'
