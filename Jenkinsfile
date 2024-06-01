@@ -1,48 +1,58 @@
 pipeline {
     agent any
+     tools {
+      maven 'maven'
+      jdk 'JAVA_HOME'
+    }
 
-    tools {
-        maven 'maven'
-    }
     environment {
-        PROJECT_NAME = sh(script: 'mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout', returnStdout: true).trim()
-        PROJECT_VERSION = sh(script: 'mvn help:evaluate -Dexpression=project.version -q -DforceStdout', returnStdout: true).trim()
-        sh "git rev-parse --short HEAD > .git/commit-id"   
-        COMMIT_ID = readFile('.git/commit-id').trim()
+        PROJECT_NAME = ""
+        PROJECT_VERSION = ""
+        COMMIT_ID = ""
     }
+
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url:'https://github.com/farazyb/git_maven_jenkins.git'
+                git branch: 'main', url: 'https://github.com/farazyb/git_maven_jenkins.git'
+            }
+        }
+
+        stage('Set Project Details') {
+            steps {
+                script {
+                    PROJECT_NAME = sh(script: 'mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout', returnStdout: true).trim()
+                    PROJECT_VERSION = sh(script: 'mvn help:evaluate -Dexpression=project.version -q -DforceStdout', returnStdout: true).trim()
+                    COMMIT_ID = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                }
             }
         }
 
         stage('Build') {
             steps {
-                script {
-                    sh 'mvn clean package'
-                }
+                sh 'mvn clean package'
             }
         }
+
         stage('Rename JAR') {
             steps {
                 script {
-                    def jarFile = "${env.PROJECT_NAME}-${env.PROJECT_VERSION}.jar"
-                    def newJarFile = "${env.PROJECT_NAME}-${env.PROJECT_VERSION}-${env.COMMIT_ID}.jar"
+                    def jarFile = "${PROJECT_NAME}-${PROJECT_VERSION}.jar"
+                    def newJarFile = "${PROJECT_NAME}-${PROJECT_VERSION}-${COMMIT_ID}.jar"
                     sh "mv target/${jarFile} target/${newJarFile}"
                     env.JAR_FILE = newJarFile
                 }
             }
         }
     }
-    
-       post {
-           success {
-               echo 'Build and tests were successful!'
-               
-           }
-           failure {
-               echo 'Build or tests failed!'
-           }
-       }
+
+    post {
+        success {
+            echo 'Build and tests were successful!'
+            echo "Deployed JAR: ${env.JAR_FILE}"
+        }
+        failure {
+            echo 'Build or tests failed!'
+        }
+    }
 }
